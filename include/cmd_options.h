@@ -1,20 +1,29 @@
 #pragma once
-
 #include <boost/program_options.hpp>
+#include <iostream>
+#include <print>
 #include <string>
 #include <unordered_map>
 
 namespace CryptoGuard {
+
+namespace po = boost::program_options;
 
 class ProgramOptions {
 public:
     ProgramOptions();
     ~ProgramOptions();
 
+    ProgramOptions(const ProgramOptions &programOptions) = delete;
+    ProgramOptions(ProgramOptions &&programOptions) = delete;
+    ProgramOptions &operator=(const ProgramOptions &programOptions) = delete;
+    ProgramOptions &&operator=(ProgramOptions &&programOptions) = delete;
+
     enum class COMMAND_TYPE {
         ENCRYPT,
         DECRYPT,
         CHECKSUM,
+        UNKNOWN,
     };
 
     void Parse(int argc, char *argv[]);
@@ -23,6 +32,9 @@ public:
     std::string GetInputFile() const { return inputFile_; }
     std::string GetOutputFile() const { return outputFile_; }
     std::string GetPassword() const { return password_; }
+
+private:
+    ProgramOptions::COMMAND_TYPE String2Enum(const std::string &command);
 
 private:
     COMMAND_TYPE command_;
