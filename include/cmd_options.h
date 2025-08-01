@@ -1,7 +1,9 @@
 #pragma once
 #include <boost/program_options.hpp>
+#include <filesystem>
 #include <iostream>
 #include <print>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 
@@ -36,8 +38,10 @@ public:
 private:
     ProgramOptions::COMMAND_TYPE String2Enum(const std::string &command);
 
+    void CheckRequiredOption(const po::variables_map &vm);
+
 private:
-    COMMAND_TYPE command_;
+    COMMAND_TYPE command_ = COMMAND_TYPE::UNKNOWN;
     const std::unordered_map<std::string_view, COMMAND_TYPE> commandMapping_ = {
         {"encrypt", ProgramOptions::COMMAND_TYPE::ENCRYPT},
         {"decrypt", ProgramOptions::COMMAND_TYPE::DECRYPT},

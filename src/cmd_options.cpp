@@ -22,18 +22,7 @@ void ProgramOptions::Parse(int argc, char *argv[]) {
             desc_.print(std::cout);
             return;
         }
-        if (vm.contains("command")) {
-            command_ = String2Enum(vm["command"].as<std::string>());
-        }
-        if (vm.contains("input")) {
-            inputFile_ = vm["input"].as<std::string>();
-        }
-        if (vm.contains("output")) {
-            outputFile_ = vm["output"].as<std::string>();
-        }
-        if (vm.contains("password")) {
-            password_ = vm["password"].as<std::string>();
-        }
+        CheckRequiredOption(vm);
     } catch (const po::error &e) {
         throw std::runtime_error("In input arguments " + std::string(e.what()));
     }
@@ -46,4 +35,36 @@ ProgramOptions::COMMAND_TYPE ProgramOptions::String2Enum(const std::string &comm
     }
     return COMMAND_TYPE::UNKNOWN;
 }
+
+void ProgramOptions::CheckRequiredOption(const po::variables_map &vm) {
+    // command
+    if (!vm.contains("command")) {
+        throw std::invalid_argument("Option \"--command\" is required. See more the \"--help\" option");
+    }
+    command_ = String2Enum(vm["command"].as<std::string>());
+    if (command_ == COMMAND_TYPE::UNKNOWN) {
+        throw std::invalid_argument("Option \"--command\" is required. See more the \"--help\" option");
+    }
+
+    // input
+    if (!vm.contains("input")) {
+        throw std::invalid_argument("Option \"--input\" is required. See more the \"--help\" option");
+    }
+    inputFile_ = vm["input"].as<std::string>();
+    if (!std::filesystem::exists(inputFile_)) {
+        throw std::invalid_argument("Input file does not exist");
+    }
+
+    // output: if output file does not exist, WE DO NOT THROW EXCEPTION
+    if (!vm.contains("output")) {
+        throw std::invalid_argument("Option \"--output\" is required. See more the \"--help\" option");
+    }
+    outputFile_ = vm["output"].as<std::string>();
+
+    if (!vm.contains("password")) {
+        throw std::invalid_argument("Option \"--password\" is required. See more the \"--help\" option");
+    }
+    password_ = vm["password"].as<std::string>();
+}
+
 }  // namespace CryptoGuard
