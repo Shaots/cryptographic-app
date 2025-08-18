@@ -1,6 +1,6 @@
 #include "cmd_options.h"
-#include <gtest/gtest.h>
 #include <fstream>
+#include <gtest/gtest.h>
 
 using namespace CryptoGuard;
 
@@ -85,7 +85,31 @@ TEST(ProgramOptions, validAll) {
     freeArgv(argc, argv);
 }
 
-// 4: invalid command
+// 4: All valid with shorted option
+TEST(ProgramOptions, shortedOption) {
+    int argc = 0;
+    std::vector<std::string> arguments = {"/workspaces/cpp-spr1/build/CryptoGuard",
+                                          "-i",
+                                          "input.txt",
+                                          "-c",
+                                          "encrypt",
+                                          "-o",
+                                          "output.txt",
+                                          "-p",
+                                          "1234567"};
+    char **argv = SimulateArgcArgv(arguments, &argc);
+    std::ofstream inputFile(arguments[2]);
+
+    ProgramOptions options;
+    EXPECT_NO_THROW(options.Parse(argc, argv));
+    EXPECT_EQ(options.GetInputFile(), "input.txt");
+    EXPECT_EQ(options.GetOutputFile(), "output.txt");
+    EXPECT_EQ(options.GetPassword(), "1234567");
+    EXPECT_EQ(options.GetCommand(), ProgramOptions::COMMAND_TYPE::ENCRYPT);
+    freeArgv(argc, argv);
+}
+
+// 5: invalid command
 TEST(ProgramOptions, invalidCommand) {
     int argc = 0;
     std::vector<std::string> arguments = {"/workspaces/cpp-spr1/build/CryptoGuard",
@@ -105,7 +129,7 @@ TEST(ProgramOptions, invalidCommand) {
     freeArgv(argc, argv);
 }
 
-// 5: non-existent input file
+// 6: non-existent input file
 TEST(ProgramOptions, invalidInputfile) {
     int argc = 0;
     std::vector<std::string> arguments = {"/workspaces/cpp-spr1/build/CryptoGuard",
@@ -121,6 +145,68 @@ TEST(ProgramOptions, invalidInputfile) {
 
     ProgramOptions options;
     EXPECT_THROW(options.Parse(argc, argv), std::invalid_argument);
+    EXPECT_EQ(options.GetCommand(), ProgramOptions::COMMAND_TYPE::ENCRYPT);
+    freeArgv(argc, argv);
+}
+
+// 7: without output file
+TEST(ProgramOptions, withoutOutput) {
+    int argc = 0;
+    std::vector<std::string> arguments = {"/workspaces/cpp-spr1/build/CryptoGuard",
+                                          "--input",
+                                          "input.txt",
+                                          "--command",
+                                          "encrypt",
+                                          "--password",
+                                          "1234567"};
+    char **argv = SimulateArgcArgv(arguments, &argc);
+    std::ofstream inputFile(arguments[2]);
+
+    ProgramOptions options;
+    EXPECT_THROW(options.Parse(argc, argv), std::invalid_argument);
+    freeArgv(argc, argv);
+}
+
+// 8: without password
+TEST(ProgramOptions, withoutPassword) {
+    int argc = 0;
+    std::vector<std::string> arguments = {
+        "/workspaces/cpp-spr1/build/CryptoGuard",
+        "--input",
+        "input.txt",
+        "--command",
+        "encrypt",
+        "--output",
+        "output.txt",
+    };
+    char **argv = SimulateArgcArgv(arguments, &argc);
+    std::ofstream inputFile(arguments[2]);
+
+    ProgramOptions options;
+    EXPECT_THROW(options.Parse(argc, argv), std::invalid_argument);
+    freeArgv(argc, argv);
+}
+
+// 9: commands case insensitive
+TEST(ProgramOptions, caseInsensitive) {
+    int argc = 0;
+    std::vector<std::string> arguments = {"/workspaces/cpp-spr1/build/CryptoGuard",
+                                          "-i",
+                                          "input.txt",
+                                          "-c",
+                                          "EnCRypT",
+                                          "-o",
+                                          "output.txt",
+                                          "-p",
+                                          "1234567"};
+    char **argv = SimulateArgcArgv(arguments, &argc);
+    std::ofstream inputFile(arguments[2]);
+
+    ProgramOptions options;
+    EXPECT_NO_THROW(options.Parse(argc, argv));
+    EXPECT_EQ(options.GetInputFile(), "input.txt");
+    EXPECT_EQ(options.GetOutputFile(), "output.txt");
+    EXPECT_EQ(options.GetPassword(), "1234567");
     EXPECT_EQ(options.GetCommand(), ProgramOptions::COMMAND_TYPE::ENCRYPT);
     freeArgv(argc, argv);
 }
