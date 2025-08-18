@@ -29,7 +29,9 @@ void ProgramOptions::Parse(int argc, char *argv[]) {
 }
 
 ProgramOptions::COMMAND_TYPE ProgramOptions::String2Enum(const std::string &command) {
-    auto it = commandMapping_.find(command);
+    std::string cpy(command);
+    std::transform(cpy.begin(), cpy.end(), cpy.begin(), ::tolower);
+    auto it = commandMapping_.find(cpy);
     if (it != commandMapping_.end()) {
         return it->second;
     }

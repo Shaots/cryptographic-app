@@ -1,5 +1,7 @@
 #pragma once
+#include <algorithm>
 #include <boost/program_options.hpp>
+#include <cctype>
 #include <filesystem>
 #include <iostream>
 #include <print>
