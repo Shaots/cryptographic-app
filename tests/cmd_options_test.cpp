@@ -1,5 +1,6 @@
 #include "cmd_options.h"
 #include <gtest/gtest.h>
+#include <fstream>
 
 using namespace CryptoGuard;
 
@@ -73,6 +74,7 @@ TEST(ProgramOptions, validAll) {
                                           "--password",
                                           "1234567"};
     char **argv = SimulateArgcArgv(arguments, &argc);
+    std::ofstream inputFile(arguments[2]);
 
     ProgramOptions options;
     EXPECT_NO_THROW(options.Parse(argc, argv));
