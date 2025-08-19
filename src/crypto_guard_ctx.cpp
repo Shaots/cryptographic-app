@@ -13,6 +13,9 @@ struct AesCipherParams {
     std::array<unsigned char, IV_SIZE> iv;    // Initialization vector
 };
 
+auto deleter = [](EVP_CIPHER_CTX *ptr) { EVP_CIPHER_CTX_free(ptr); };
+using UniquePtr = std::unique_ptr<EVP_CIPHER_CTX, decltype(deleter)>;
+
 class CryptoGuardCtx::Impl {
 public:
     Impl() { OpenSSL_add_all_algorithms(); }
@@ -31,6 +34,28 @@ private:
 void CryptoGuardCtx::Impl::EncryptFile(std::iostream &inStream, std::iostream &outStream, std::string_view password) {
     CheckStream(inStream);
     CheckStream(outStream);
+
+    AesCipherParams params = CreateChiperParamsFromPassword(password);
+
+    int outlen = 0;
+    int tmplen = 0;
+    unsigned char outbuf[1024];
+    const std::string intext("Some Crypto Text");
+    UniquePtr ctx(EVP_CIPHER_CTX_new());
+    if (!EVP_EncryptInit_ex2(ctx.get(), EVP_aes_256_cbc(), params.key.data(), params.iv.data(), nullptr)) {
+        /* Error */
+        return;
+    }
+    if (!EVP_EncryptUpdate(ctx.get(), outbuf, &outlen, reinterpret_cast<const unsigned char*>(intext.c_str()), intext.length())) {
+        /* Error */
+        return;
+    }
+    if (!EVP_EncryptFinal_ex(ctx.get(), outbuf + outlen, &tmplen)) {
+        /* Error */
+        return;
+    }
+    outlen += tmplen;
+    outStream << outbuf << std::endl;
     std::println("Impl EncryptFile");
 }
 
