@@ -24,16 +24,26 @@ public:
 
 private:
     AesCipherParams CreateChiperParamsFromPassword(std::string_view password);
+
+    void CheckStream(const std::iostream &stream);
 };
 
 void CryptoGuardCtx::Impl::EncryptFile(std::iostream &inStream, std::iostream &outStream, std::string_view password) {
+    CheckStream(inStream);
+    CheckStream(outStream);
     std::println("Impl EncryptFile");
 }
 
 void CryptoGuardCtx::Impl::DecryptFile(std::iostream &inStream, std::iostream &outStream, std::string_view password) {
+    CheckStream(inStream);
+    CheckStream(outStream);
     std::println("Impl DecryptFile");
 }
-std::string CryptoGuardCtx::Impl::CalculateChecksum(std::iostream &inStream) { return "Impl NOT_IMPLEMENTED"; }
+
+std::string CryptoGuardCtx::Impl::CalculateChecksum(std::iostream &inStream) {
+    CheckStream(inStream);
+    return "Impl NOT_IMPLEMENTED";
+}
 
 AesCipherParams CryptoGuardCtx::Impl::CreateChiperParamsFromPassword(std::string_view password) {
     AesCipherParams params;
@@ -48,6 +58,12 @@ AesCipherParams CryptoGuardCtx::Impl::CreateChiperParamsFromPassword(std::string
     }
 
     return params;
+}
+
+void CryptoGuardCtx::Impl::CheckStream(const std::iostream &stream) {
+    if (!stream.good()) {
+        throw std::runtime_error("Stream is invalid");
+    }
 }
 
 // --------------------------------------------------------------------------
