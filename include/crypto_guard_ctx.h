@@ -1,8 +1,8 @@
 #pragma once
 #include <memory>
+#include <openssl/evp.h>
 #include <print>
 #include <string>
-
 namespace CryptoGuard {
 
 class CryptoGuardCtx {
