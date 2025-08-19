@@ -2,6 +2,7 @@
 #include "crypto_guard_ctx.h"
 #include <algorithm>
 #include <array>
+#include <fstream>
 #include <iostream>
 #include <openssl/evp.h>
 #include <print>
@@ -80,9 +81,15 @@ int main(int argc, char *argv[]) {
         // Конец примера
         //
 
+        std::ofstream outf("input.txt");
         CryptoGuard::ProgramOptions options;
         options.Parse(argc, argv);
         CryptoGuard::CryptoGuardCtx cryptoCtx;
+        std::ifstream inStream(options.GetInputFile());
+        std::ofstream outStream(options.GetOutputFile());
+        std::iostream inputStream(inStream.rdbuf());
+        std::iostream outputStream(outStream.rdbuf());
+        cryptoCtx.EncryptFile(inputStream, outputStream, options.GetPassword());
 
         using COMMAND_TYPE = CryptoGuard::ProgramOptions::COMMAND_TYPE;
         switch (options.GetCommand()) {
