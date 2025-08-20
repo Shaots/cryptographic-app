@@ -29,6 +29,8 @@ private:
     AesCipherParams CreateChiperParamsFromPassword(std::string_view password);
 
     void CheckStream(const std::iostream &stream);
+
+    const size_t bufLen = 1024;
 };
 
 void CryptoGuardCtx::Impl::EncryptFile(std::iostream &inStream, std::iostream &outStream, std::string_view password) {
@@ -38,31 +40,53 @@ void CryptoGuardCtx::Impl::EncryptFile(std::iostream &inStream, std::iostream &o
     AesCipherParams params = CreateChiperParamsFromPassword(password);
 
     int outlen = 0;
-    int tmplen = 0;
-    unsigned char outbuf[1024];
-    const std::string intext("Some Crypto Text");
+    unsigned char outbuf[bufLen];
+    unsigned char inbuf[bufLen];
     UniquePtr ctx(EVP_CIPHER_CTX_new());
-    if (!EVP_EncryptInit_ex2(ctx.get(), EVP_aes_256_cbc(), params.key.data(), params.iv.data(), nullptr)) {
-        /* Error */
-        return;
+    if (!EVP_EncryptInit_ex2(ctx.get(), params.cipher, params.key.data(), params.iv.data(), nullptr)) {
+        throw std::runtime_error("Initialization in Encrypt failed");
     }
-    if (!EVP_EncryptUpdate(ctx.get(), outbuf, &outlen, reinterpret_cast<const unsigned char*>(intext.c_str()), intext.length())) {
-        /* Error */
-        return;
+
+    while (inStream.read(reinterpret_cast<char *>(inbuf), bufLen) || inStream.gcount() > 0) {
+        if (!EVP_EncryptUpdate(ctx.get(), outbuf, &outlen, inbuf, inStream.gcount())) {
+            throw std::runtime_error("Encryption failed");
+        }
+        CheckStream(outStream);
+        outStream.write(reinterpret_cast<char *>(outbuf), outlen);
     }
-    if (!EVP_EncryptFinal_ex(ctx.get(), outbuf + outlen, &tmplen)) {
-        /* Error */
-        return;
+
+    if (!EVP_EncryptFinal_ex(ctx.get(), outbuf, &outlen)) {
+        throw std::runtime_error("Finish in Encrypt failed");
     }
-    outlen += tmplen;
-    outStream << outbuf << std::endl;
-    std::println("Impl EncryptFile");
+    outStream.write(reinterpret_cast<char *>(outbuf), outlen);
 }
 
 void CryptoGuardCtx::Impl::DecryptFile(std::iostream &inStream, std::iostream &outStream, std::string_view password) {
     CheckStream(inStream);
     CheckStream(outStream);
-    std::println("Impl DecryptFile");
+
+    AesCipherParams params = CreateChiperParamsFromPassword(password);
+
+    int outlen = 0;
+    unsigned char outbuf[bufLen];
+    unsigned char inbuf[bufLen];
+    UniquePtr ctx(EVP_CIPHER_CTX_new());
+    if (!EVP_DecryptInit_ex2(ctx.get(), params.cipher, params.key.data(), params.iv.data(), nullptr)) {
+        throw std::runtime_error("Initialization in Decrypt failed");
+    }
+
+    while (inStream.read(reinterpret_cast<char *>(inbuf), bufLen) || inStream.gcount() > 0) {
+        if (!EVP_DecryptUpdate(ctx.get(), outbuf, &outlen, inbuf, inStream.gcount())) {
+            throw std::runtime_error("Decryption failed");
+        }
+        CheckStream(outStream);
+        outStream.write(reinterpret_cast<char *>(outbuf), outlen);
+    }
+
+    if (!EVP_DecryptFinal_ex(ctx.get(), outbuf, &outlen)) {
+        throw std::runtime_error("Finish in Decrypt failed");
+    }
+    outStream.write(reinterpret_cast<char *>(outbuf), outlen);
 }
 
 std::string CryptoGuardCtx::Impl::CalculateChecksum(std::iostream &inStream) {
