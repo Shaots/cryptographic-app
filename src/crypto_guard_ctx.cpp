@@ -13,8 +13,11 @@ struct AesCipherParams {
     std::array<unsigned char, IV_SIZE> iv;    // Initialization vector
 };
 
-auto deleter = [](EVP_CIPHER_CTX *ptr) { EVP_CIPHER_CTX_free(ptr); };
-using UniquePtr = std::unique_ptr<EVP_CIPHER_CTX, decltype(deleter)>;
+auto deleterChipher = [](EVP_CIPHER_CTX *ptr) { EVP_CIPHER_CTX_free(ptr); };
+using UniquePtrChipher = std::unique_ptr<EVP_CIPHER_CTX, decltype(deleterChipher)>;
+
+auto deleterMD = [](EVP_MD_CTX *ptr) { EVP_MD_CTX_free(ptr); };
+using UniquePtrMD = std::unique_ptr<EVP_MD_CTX, decltype(deleterMD)>;
 
 class CryptoGuardCtx::Impl {
 public:
@@ -42,7 +45,7 @@ void CryptoGuardCtx::Impl::EncryptFile(std::iostream &inStream, std::iostream &o
     int outlen = 0;
     unsigned char outbuf[bufLen];
     unsigned char inbuf[bufLen];
-    UniquePtr ctx(EVP_CIPHER_CTX_new());
+    UniquePtrChipher ctx(EVP_CIPHER_CTX_new());
     if (!EVP_EncryptInit_ex2(ctx.get(), params.cipher, params.key.data(), params.iv.data(), nullptr)) {
         throw std::runtime_error("Initialization in Encrypt failed");
     }
@@ -70,7 +73,7 @@ void CryptoGuardCtx::Impl::DecryptFile(std::iostream &inStream, std::iostream &o
     int outlen = 0;
     unsigned char outbuf[bufLen];
     unsigned char inbuf[bufLen];
-    UniquePtr ctx(EVP_CIPHER_CTX_new());
+    UniquePtrChipher ctx(EVP_CIPHER_CTX_new());
     if (!EVP_DecryptInit_ex2(ctx.get(), params.cipher, params.key.data(), params.iv.data(), nullptr)) {
         throw std::runtime_error("Initialization in Decrypt failed");
     }
@@ -91,7 +94,32 @@ void CryptoGuardCtx::Impl::DecryptFile(std::iostream &inStream, std::iostream &o
 
 std::string CryptoGuardCtx::Impl::CalculateChecksum(std::iostream &inStream) {
     CheckStream(inStream);
-    return "Impl NOT_IMPLEMENTED";
+    UniquePtrMD mdctx(EVP_MD_CTX_new());
+    unsigned char md_value[EVP_MAX_MD_SIZE];
+    unsigned char inbuf[bufLen];
+    unsigned int md_len;
+
+    if (!EVP_DigestInit_ex2(mdctx.get(), EVP_sha256(), nullptr)) {
+        throw std::runtime_error("Message digest initialization failed");
+    }
+
+    while (inStream.read(reinterpret_cast<char *>(inbuf), bufLen) || inStream.gcount() > 0) {
+        if (!EVP_DigestUpdate(mdctx.get(), inbuf, inStream.gcount())) {
+            throw std::runtime_error("Message digest update failed");
+        }
+    }
+
+    if (!EVP_DigestFinal_ex(mdctx.get(), md_value, &md_len)) {
+        throw std::runtime_error("Message digest finalization failed");
+    }
+
+    std::stringstream ss;
+    ss << std::hex << std::uppercase;
+    for (unsigned int i = 0; i < md_len; ++i) {
+        ss << std::setw(2) << std::setfill('0') << static_cast<int>(md_value[i]);
+    }
+
+    return ss.str();
 }
 
 AesCipherParams CryptoGuardCtx::Impl::CreateChiperParamsFromPassword(std::string_view password) {

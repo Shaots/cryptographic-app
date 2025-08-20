@@ -1,8 +1,10 @@
 #pragma once
+#include <iomanip>
 #include <iostream>
 #include <memory>
 #include <openssl/evp.h>
 #include <print>
+#include <sstream>
 #include <string>
 namespace CryptoGuard {
 
