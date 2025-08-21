@@ -58,6 +58,11 @@ void ProgramOptions::CheckRequiredOption(const po::variables_map &vm) {
         throw std::invalid_argument("Input file does not exist");
     }
 
+    // with checksum, no output file is required.
+    if (command_ == COMMAND_TYPE::CHECKSUM) {
+        return;
+    }
+
     // output: if output file does not exist, WE DO NOT THROW EXCEPTION
     if (!vm.contains("output")) {
         throw std::invalid_argument("Option \"--output\" is required. See more the \"--help\" option");
