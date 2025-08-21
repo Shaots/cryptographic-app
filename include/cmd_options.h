@@ -32,12 +32,12 @@ public:
 
     void Parse(int argc, char *argv[]);
 
-    COMMAND_TYPE GetCommand() const { return command_; }
-    std::string GetInputFile() const { return inputFile_; }
-    std::string GetOutputFile() const { return outputFile_; }
-    std::string GetPassword() const { return password_; }
+    COMMAND_TYPE GetCommand() const noexcept { return command_; }
+    std::string GetInputFile() const noexcept { return inputFile_; }
+    std::string GetOutputFile() const noexcept { return outputFile_; }
+    std::string GetPassword() const noexcept { return password_; }
 
-    bool getStatusHelp() const { return isHelp; }
+    bool getStatusHelp() const noexcept { return isHelp; }
 
 private:
     ProgramOptions::COMMAND_TYPE String2Enum(const std::string &command);

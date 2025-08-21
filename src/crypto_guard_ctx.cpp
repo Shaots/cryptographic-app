@@ -24,21 +24,22 @@ public:
     Impl() { OpenSSL_add_all_algorithms(); }
     ~Impl() { EVP_cleanup(); }
 
-    void EncryptFile(std::iostream &inStream, std::iostream &outStream, std::string_view password);
-    void DecryptFile(std::iostream &inStream, std::iostream &outStream, std::string_view password);
-    std::string CalculateChecksum(std::iostream &inStream);
+    void EncryptFile(std::iostream &inStream, std::iostream &outStream, std::string_view password) const;
+    void DecryptFile(std::iostream &inStream, std::iostream &outStream, std::string_view password) const;
+    std::string CalculateChecksum(std::iostream &inStream) const;
 
 private:
-    AesCipherParams CreateChiperParamsFromPassword(std::string_view password);
+    AesCipherParams CreateChiperParamsFromPassword(std::string_view password) const;
 
-    void CheckStream(const std::iostream &stream);
+    void CheckStream(const std::iostream &stream) const;
 
-    std::string GetOpensslError();
+    std::string GetOpensslError() const;
 
     const size_t bufLen = 1024;
 };
 
-void CryptoGuardCtx::Impl::EncryptFile(std::iostream &inStream, std::iostream &outStream, std::string_view password) {
+void CryptoGuardCtx::Impl::EncryptFile(std::iostream &inStream, std::iostream &outStream,
+                                       std::string_view password) const {
     CheckStream(inStream);
     CheckStream(outStream);
 
@@ -66,7 +67,8 @@ void CryptoGuardCtx::Impl::EncryptFile(std::iostream &inStream, std::iostream &o
     outStream.write(reinterpret_cast<char *>(outbuf), outlen);
 }
 
-void CryptoGuardCtx::Impl::DecryptFile(std::iostream &inStream, std::iostream &outStream, std::string_view password) {
+void CryptoGuardCtx::Impl::DecryptFile(std::iostream &inStream, std::iostream &outStream,
+                                       std::string_view password) const {
     CheckStream(inStream);
     CheckStream(outStream);
 
@@ -94,7 +96,7 @@ void CryptoGuardCtx::Impl::DecryptFile(std::iostream &inStream, std::iostream &o
     outStream.write(reinterpret_cast<char *>(outbuf), outlen);
 }
 
-std::string CryptoGuardCtx::Impl::CalculateChecksum(std::iostream &inStream) {
+std::string CryptoGuardCtx::Impl::CalculateChecksum(std::iostream &inStream) const {
     CheckStream(inStream);
     UniquePtrMD mdctx(EVP_MD_CTX_new());
     unsigned char md_value[EVP_MAX_MD_SIZE];
@@ -123,7 +125,7 @@ std::string CryptoGuardCtx::Impl::CalculateChecksum(std::iostream &inStream) {
     return ss.str();
 }
 
-std::string CryptoGuardCtx::Impl::GetOpensslError() {
+std::string CryptoGuardCtx::Impl::GetOpensslError() const {
     char err_buf[256];
     unsigned long err_code = ERR_get_error();
     if (err_code != 0) {
@@ -134,7 +136,7 @@ std::string CryptoGuardCtx::Impl::GetOpensslError() {
     }
 }
 
-AesCipherParams CryptoGuardCtx::Impl::CreateChiperParamsFromPassword(std::string_view password) {
+AesCipherParams CryptoGuardCtx::Impl::CreateChiperParamsFromPassword(std::string_view password) const {
     AesCipherParams params;
     constexpr std::array<unsigned char, 8> salt = {'1', '2', '3', '4', '5', '6', '7', '8'};
 
@@ -149,7 +151,7 @@ AesCipherParams CryptoGuardCtx::Impl::CreateChiperParamsFromPassword(std::string
     return params;
 }
 
-void CryptoGuardCtx::Impl::CheckStream(const std::iostream &stream) {
+void CryptoGuardCtx::Impl::CheckStream(const std::iostream &stream) const {
     if (!stream.good()) {
         throw std::runtime_error("Stream is invalid");
     }
@@ -160,14 +162,16 @@ void CryptoGuardCtx::Impl::CheckStream(const std::iostream &stream) {
 CryptoGuardCtx::CryptoGuardCtx() : pImpl_(std::make_unique<Impl>()) {}
 CryptoGuardCtx::~CryptoGuardCtx() = default;
 
-void CryptoGuardCtx::EncryptFile(std::iostream &inStream, std::iostream &outStream, std::string_view password) {
+void CryptoGuardCtx::EncryptFile(std::iostream &inStream, std::iostream &outStream, std::string_view password) const {
     pImpl_->EncryptFile(inStream, outStream, password);
 }
 
-void CryptoGuardCtx::DecryptFile(std::iostream &inStream, std::iostream &outStream, std::string_view password) {
+void CryptoGuardCtx::DecryptFile(std::iostream &inStream, std::iostream &outStream, std::string_view password) const {
     pImpl_->DecryptFile(inStream, outStream, password);
 }
 
-std::string CryptoGuardCtx::CalculateChecksum(std::iostream &inStream) { return pImpl_->CalculateChecksum(inStream); }
+std::string CryptoGuardCtx::CalculateChecksum(std::iostream &inStream) const {
+    return pImpl_->CalculateChecksum(inStream);
+}
 
 }  // namespace CryptoGuard
