@@ -5,6 +5,24 @@
 #include <print>
 #include <stdexcept>
 
+auto deleterIfstream = [](std::ifstream *ptr) {
+    if (ptr->is_open()) {
+        ptr->close();
+    }
+    delete ptr;
+};
+
+using UniquePtrIfstream = std::unique_ptr<std::ifstream, decltype(deleterIfstream)>;
+
+auto deleterOfstream = [](std::ofstream *ptr) {
+    if (ptr->is_open()) {
+        ptr->close();
+    }
+    delete ptr;
+};
+
+using UniquePtrOfstream = std::unique_ptr<std::ofstream, decltype(deleterOfstream)>;
+
 int main(int argc, char *argv[]) {
     try {
         CryptoGuard::ProgramOptions options;
@@ -14,10 +32,10 @@ int main(int argc, char *argv[]) {
         }
 
         CryptoGuard::CryptoGuardCtx cryptoCtx;
-        std::ifstream inStream(options.GetInputFile());
-        std::ofstream outStream(options.GetOutputFile());
-        std::iostream inputStream(inStream.rdbuf());
-        std::iostream outputStream(outStream.rdbuf());
+        UniquePtrIfstream inStream(new std::ifstream(options.GetInputFile()));
+        std::iostream inputStream(inStream->rdbuf());
+        UniquePtrOfstream outStream(new std::ofstream(options.GetOutputFile()));
+        std::iostream outputStream(outStream->rdbuf());
 
         using COMMAND_TYPE = CryptoGuard::ProgramOptions::COMMAND_TYPE;
         switch (options.GetCommand()) {

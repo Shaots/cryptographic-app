@@ -61,7 +61,7 @@ TEST(TestCrypt, encryptDecryptLongMsg) {
 
     std::stringstream deInStream(outStream.str());
     std::stringstream deOutStream;
-    EXPECT_NO_THROW(cryptoCtx.DecryptFile(deInStream, deOutStream, "1234567"));
+    EXPECT_NO_THROW(cryptoCtx.DecryptFile(deInStream, deOutStream, password));
     EXPECT_EQ(deOutStream.str(), msg);
 }
 
@@ -115,4 +115,20 @@ TEST(TestCrypt, checkEncDec) {
     std::stringstream deOutStream;
     EXPECT_NO_THROW(cryptoCtx.DecryptFile(deInStream, deOutStream, "1234567"));
     EXPECT_EQ(deOutStream.str(), checksum);
+}
+
+// 8: Encryption and decryption with different keys
+TEST(TestCrypt, differentKey) {
+    std::string msg("this is input");
+    std::string password("1234567");
+    std::stringstream inStream(msg);
+    std::stringstream outStream;
+
+    CryptoGuard::CryptoGuardCtx cryptoCtx;
+    EXPECT_NO_THROW(cryptoCtx.EncryptFile(inStream, outStream, "1234567"));
+
+    std::stringstream deInStream(outStream.str());
+    std::stringstream deOutStream;
+    EXPECT_THROW(cryptoCtx.DecryptFile(deInStream, deOutStream, "1234"), std::runtime_error);
+    EXPECT_NE(deOutStream.str(), msg);
 }

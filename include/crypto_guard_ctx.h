@@ -1,4 +1,5 @@
 #pragma once
+#include <experimental/propagate_const>
 #include <iomanip>
 #include <iostream>
 #include <memory>
@@ -27,7 +28,7 @@ public:
 
 private:
     class Impl;
-    std::unique_ptr<Impl> pImpl_;
+    std::experimental::propagate_const<std::unique_ptr<Impl>> pImpl_;
 };
 
 }  // namespace CryptoGuard
