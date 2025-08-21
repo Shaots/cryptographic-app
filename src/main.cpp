@@ -9,6 +9,10 @@ int main(int argc, char *argv[]) {
     try {
         CryptoGuard::ProgramOptions options;
         options.Parse(argc, argv);
+        if (options.getStatusHelp()) {
+            return 0;
+        }
+
         CryptoGuard::CryptoGuardCtx cryptoCtx;
         std::ifstream inStream(options.GetInputFile());
         std::ofstream outStream(options.GetOutputFile());

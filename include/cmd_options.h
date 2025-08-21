@@ -37,6 +37,8 @@ public:
     std::string GetOutputFile() const { return outputFile_; }
     std::string GetPassword() const { return password_; }
 
+    bool getStatusHelp() const { return isHelp; }
+
 private:
     ProgramOptions::COMMAND_TYPE String2Enum(const std::string &command);
 
@@ -50,6 +52,7 @@ private:
         {"checksum", ProgramOptions::COMMAND_TYPE::CHECKSUM},
     };
 
+    bool isHelp = false;
     std::string inputFile_;
     std::string outputFile_;
     std::string password_;

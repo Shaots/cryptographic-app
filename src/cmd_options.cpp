@@ -19,6 +19,7 @@ void ProgramOptions::Parse(int argc, char *argv[]) {
         po::notify(vm);
 
         if (vm.contains("help")) {
+            isHelp = true;
             desc_.print(std::cout);
             return;
         }
