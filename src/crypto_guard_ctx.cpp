@@ -33,6 +33,8 @@ private:
 
     void CheckStream(const std::iostream &stream);
 
+    std::string GetOpensslError();
+
     const size_t bufLen = 1024;
 };
 
@@ -47,19 +49,19 @@ void CryptoGuardCtx::Impl::EncryptFile(std::iostream &inStream, std::iostream &o
     unsigned char inbuf[bufLen];
     UniquePtrChipher ctx(EVP_CIPHER_CTX_new());
     if (!EVP_EncryptInit_ex2(ctx.get(), params.cipher, params.key.data(), params.iv.data(), nullptr)) {
-        throw std::runtime_error("Initialization in Encrypt failed");
+        throw std::runtime_error("Initialization in Encrypt failed: " + GetOpensslError());
     }
 
     while (inStream.read(reinterpret_cast<char *>(inbuf), bufLen) || inStream.gcount() > 0) {
         if (!EVP_EncryptUpdate(ctx.get(), outbuf, &outlen, inbuf, inStream.gcount())) {
-            throw std::runtime_error("Encryption failed");
+            throw std::runtime_error("Encryption failed: " + GetOpensslError());
         }
         CheckStream(outStream);
         outStream.write(reinterpret_cast<char *>(outbuf), outlen);
     }
 
     if (!EVP_EncryptFinal_ex(ctx.get(), outbuf, &outlen)) {
-        throw std::runtime_error("Finish in Encrypt failed");
+        throw std::runtime_error("Finish in Encrypt failed " + GetOpensslError());
     }
     outStream.write(reinterpret_cast<char *>(outbuf), outlen);
 }
@@ -80,14 +82,14 @@ void CryptoGuardCtx::Impl::DecryptFile(std::iostream &inStream, std::iostream &o
 
     while (inStream.read(reinterpret_cast<char *>(inbuf), bufLen) || inStream.gcount() > 0) {
         if (!EVP_DecryptUpdate(ctx.get(), outbuf, &outlen, inbuf, inStream.gcount())) {
-            throw std::runtime_error("Decryption failed");
+            throw std::runtime_error("Decryption failed: " + GetOpensslError());
         }
         CheckStream(outStream);
         outStream.write(reinterpret_cast<char *>(outbuf), outlen);
     }
 
     if (!EVP_DecryptFinal_ex(ctx.get(), outbuf, &outlen)) {
-        throw std::runtime_error("Finish in Decrypt failed");
+        throw std::runtime_error("Finish in Decrypt failed: " + GetOpensslError());
     }
     outStream.write(reinterpret_cast<char *>(outbuf), outlen);
 }
@@ -100,17 +102,16 @@ std::string CryptoGuardCtx::Impl::CalculateChecksum(std::iostream &inStream) {
     unsigned int md_len;
 
     if (!EVP_DigestInit_ex2(mdctx.get(), EVP_sha256(), nullptr)) {
-        throw std::runtime_error("Message digest initialization failed");
+        throw std::runtime_error("Message digest initialization failed: " + GetOpensslError());
     }
-
     while (inStream.read(reinterpret_cast<char *>(inbuf), bufLen) || inStream.gcount() > 0) {
         if (!EVP_DigestUpdate(mdctx.get(), inbuf, inStream.gcount())) {
-            throw std::runtime_error("Message digest update failed");
+            throw std::runtime_error("Message digest update failed: " + GetOpensslError());
         }
     }
 
     if (!EVP_DigestFinal_ex(mdctx.get(), md_value, &md_len)) {
-        throw std::runtime_error("Message digest finalization failed");
+        throw std::runtime_error("Message digest finalization failed: " + GetOpensslError());
     }
 
     std::stringstream ss;
@@ -120,6 +121,17 @@ std::string CryptoGuardCtx::Impl::CalculateChecksum(std::iostream &inStream) {
     }
 
     return ss.str();
+}
+
+std::string CryptoGuardCtx::Impl::GetOpensslError() {
+    char err_buf[256];
+    unsigned long err_code = ERR_get_error();
+    if (err_code != 0) {
+        ERR_error_string_n(err_code, err_buf, sizeof(err_buf));
+        return std::string(err_buf);
+    } else {
+        return std::string("");
+    }
 }
 
 AesCipherParams CryptoGuardCtx::Impl::CreateChiperParamsFromPassword(std::string_view password) {

@@ -2,6 +2,7 @@
 #include <iomanip>
 #include <iostream>
 #include <memory>
+#include <openssl/err.h>
 #include <openssl/evp.h>
 #include <print>
 #include <sstream>
