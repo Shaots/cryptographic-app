@@ -132,3 +132,24 @@ TEST(TestCrypt, differentKey) {
     EXPECT_THROW(cryptoCtx.DecryptFile(deInStream, deOutStream, "1234"), std::runtime_error);
     EXPECT_NE(deOutStream.str(), msg);
 }
+
+// 9: Decrypt an incomplete message
+TEST(TestCrypt, incompleteMsg) {
+    std::string msg("this is input");
+    CryptoGuard::CryptoGuardCtx cryptoCtx;
+
+    std::string password("1234567");
+    std::stringstream inStream(msg);
+    std::stringstream outStream;
+
+    EXPECT_NO_THROW(cryptoCtx.EncryptFile(inStream, outStream, password));
+
+    std::string encryptCode = outStream.str();
+    size_t halfLen = encryptCode.length() / 2;
+    std::string half = encryptCode.substr(0, halfLen);
+
+    std::stringstream deInStream(half);
+    std::stringstream deOutStream;
+    EXPECT_THROW(cryptoCtx.DecryptFile(deInStream, deOutStream, "1234567"), std::runtime_error);
+    EXPECT_NE(deOutStream.str(), msg);
+}
